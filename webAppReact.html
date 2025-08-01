@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Safety Issues</title>
+    <style>
+        body { margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+
+    <!-- Babel to transpile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        // --- This is your entire React Application ---
+
+        const { useState, useEffect } = React;
+
+        // --- Helper Functions & Constants ---
+        const PRIMARY_COLOR = '#003a42';
+        const ACCENT_COLOR = '#8ec540';
+        const BACKGROUND_COLOR = '#f8f9fa';
+        const TEXT_COLOR = '#333333';
+        const SUBTLE_TEXT_COLOR = '#6c757d';
+        const ERROR_COLOR = '#dc3545';
+        const SUCCESS_COLOR = '#198754';
+
+        // --- App Data ---
+        const DEPARTMENTS = ['Powdergrinding', 'Pressing','Receiving', 'Preparation', 'Cooking', 'Packaging', 'Sanitation', 'Maintenance'];
+        const ASSIGNED_TO_EMAILS = ['remco.mulder@dutchcocoa.nl', 'r.koers@ecomindustrial.eu'];
+
+        // --- Styles (CSS-in-JS) ---
+        const styles = {
+          root: { backgroundColor: BACKGROUND_COLOR, fontFamily: 'sans-serif', minHeight: '100vh' },
+          container: { maxWidth: '800px', margin: '0 auto', padding: '20px' },
+          header: { padding: '20px 0', textAlign: 'center', position: 'relative' },
+          headerTitle: { fontSize: '28px', fontWeight: 'bold', color: PRIMARY_COLOR },
+          backButton: { position: 'absolute', left: '0', top: '25px', color: ACCENT_COLOR, fontSize: '16px', cursor: 'pointer', background: 'none', border: 'none' },
+          fab: { position: 'fixed', right: '30px', bottom: '30px', width: '60px', height: '60px', borderRadius: '50%', backgroundColor: PRIMARY_COLOR, color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '30px', cursor: 'pointer', boxShadow: '0 4px 8px rgba(0,0,0,0.2)', border: 'none' },
+          card: { backgroundColor: 'white', borderRadius: '12px', padding: '25px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid #dee2e6' },
+          issueCard: { cursor: 'pointer', transition: 'transform 0.2s' },
+          issueCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' },
+          issueTitle: { fontSize: '20px', fontWeight: '600', color: TEXT_COLOR, margin: '0', marginRight: '10px' },
+          issueDetailsText: { fontSize: '14px', color: SUBTLE_TEXT_COLOR, marginBottom: '4px', margin: '0' },
+          statusPill: { padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', flexShrink: 0 },
+          label: { fontSize: '16px', color: TEXT_COLOR, marginBottom: '8px', fontWeight: '500', display: 'block' },
+          input: { width: '100%', backgroundColor: '#fff', border: '1px solid #ced4da', borderRadius: '8px', padding: '12px', fontSize: '16px', marginBottom: '15px', boxSizing: 'border-box', color: TEXT_COLOR },
+          textArea: { height: '120px', resize: 'vertical' },
+          button: { width: '100%', padding: '15px', borderRadius: '8px', marginTop: '10px', color: 'white', fontSize: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+          imagePreview: { width: '100%', height: 'auto', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px', backgroundColor: '#e9ecef', display: 'block' },
+          detailImage: { width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px', backgroundColor: '#e9ecef' },
+          detailRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' },
+          detailTitle: { fontSize: '24px', fontWeight: 'bold', color: TEXT_COLOR, margin: '0', marginRight: '10px' },
+          detailLabel: { fontSize: '14px', color: SUBTLE_TEXT_COLOR, marginTop: '20px', marginBottom: '5px', fontWeight: 'bold' },
+          detailText: { fontSize: '16px', color: TEXT_COLOR, lineHeight: '1.5', margin: '0' },
+          sectionTitle: { fontSize: '20px', fontWeight: 'bold', color: PRIMARY_COLOR, marginBottom: '15px', borderBottom: '1px solid #e9ecef', paddingBottom: '10px' },
+          errorText: { color: ERROR_COLOR, marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' },
+          successText: { color: SUCCESS_COLOR, marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' },
+          spinner: { width: '20px', height: '20px', border: '3px solid rgba(255, 255, 255, 0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' },
+        };
+
+        // --- Reusable Components ---
+        const AppButton = ({ title, onClick, style, disabled = false, isLoading = false }) => (
+          <button
+            style={{...styles.button, ...style, backgroundColor: disabled || isLoading ? '#9ca3af' : (style?.backgroundColor || ACCENT_COLOR), cursor: disabled || isLoading ? 'not-allowed' : 'pointer' }}
+            onClick={onClick}
+            disabled={disabled || isLoading}
+          >
+            {isLoading ? <div style={styles.spinner}></div> : title}
+          </button>
+        );
+
+        const StatusPill = ({ status }) => {
+          const statusStyles = {
+            Open: { backgroundColor: '#f8d7da', color: '#721c24' },
+            'In Progress': { backgroundColor: '#fff3cd', color: '#856404' },
+            Resolved: { backgroundColor: '#d1e7dd', color: '#0f5132' },
+          };
+          return (
+            <div style={{ ...styles.statusPill, ...statusStyles[status] }}>
+              {status}
+            </div>
+          );
+        };
+
+        // --- Screens ---
+        const HomeScreen = ({ setScreen, setSelectedIssue, issues, isLoading }) => {
+          if (isLoading) {
+              return <div style={{...styles.container, textAlign: 'center'}}><p>Loading Issues...</p></div>
+          }
+          
+          return (
+            <div style={styles.container}>
+              <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+              <header style={styles.header}>
+                <h1 style={styles.headerTitle}>Food Safety Issues</h1>
+              </header>
+              {issues.length === 0 && <p style={{textAlign: 'center'}}>No open issues found.</p>}
+              {issues.map(issue => (
+                <div key={issue.ID} onClick={() => { setSelectedIssue(issue); setScreen('details'); }} style={{...styles.card, ...styles.issueCard}}>
+                  <div style={styles.issueCardHeader}>
+                    <h2 style={styles.issueTitle}>{issue.Title}</h2>
+                    <StatusPill status={issue.Status} />
+                  </div>
+                  <p style={styles.issueDetailsText}>Department: {issue.Department}</p>
+                  <p style={styles.issueDetailsText}>Reported: {issue.Created?.split('T')[0]}</p>
+                </div>
+              ))}
+              <button style={styles.fab} onClick={() => setScreen('new')}>+</button>
+            </div>
+          );
+        };
+
+        const NewIssueScreen = ({ setScreen, refreshIssues }) => {
+          const [department, setDepartment] = useState('');
+          const [title, setTitle] = useState('');
+          const [description, setDescription] = useState('');
+          const [assignedTo, setAssignedTo] = useState('');
+          const [image, setImage] = useState(null); 
+          
+          const [isLoading, setIsLoading] = useState(false);
+          const [error, setError] = useState('');
+          const [success, setSuccess] = useState('');
+
+          const handleImageChange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onloadend = () => { setImage(reader.result); };
+            reader.readAsDataURL(file);
+          };
+
+          const handleSubmit = async () => {
+            if (!department || !title || !assignedTo) {
+              setError('Please fill in Department, Title, and Assigned To fields.');
+              setSuccess('');
+              return;
+            }
+            setError('');
+            setSuccess('');
+            setIsLoading(true);
+
+            const powerAutomateUrl = "https://prod-160.westus.logic.azure.com:443/workflows/6f7dca22a8114f9cb35d6b4338184274/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dWRshylKCXjPvPi65p9c9e7uJKbb8yNEbM63xsLqzVM";
+
+            const payload = {
+              data: {
+                title: title,
+                department: department,
+                description: description,
+                assignedTo: assignedTo,
+                initialImage: image,
+              }
+            };
+
+            try {
+              const response = await fetch(powerAutomateUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+
+              if (response.ok) {
+                setSuccess('Issue submitted successfully!');
+                await refreshIssues();
+                setScreen('home');
+              } else {
+                setIsLoading(false); // Stop loading on error
+                throw new Error(`Server responded with status: ${response.status}`);
+              }
+            } catch (err) {
+              console.error("Submission Error:", err);
+              setError('Failed to submit issue. Please check network and try again.');
+              setIsLoading(false); // Stop loading on error
+            }
+          };
+
+          return (
+            <div style={styles.container}>
+              <header style={styles.header}>
+                <button style={styles.backButton} onClick={() => setScreen('home')}>&lt; Back</button>
+                <h1 style={styles.headerTitle}>Report New Issue</h1>
+              </header>
+              <div style={styles.card}>
+                {error && <p style={styles.errorText}>{error}</p>}
+                {success && <p style={styles.successText}>{success}</p>}
+                
+                <label style={styles.label}>Department</label>
+                <select style={styles.input} value={department} onChange={(e) => setDepartment(e.target.value)}>
+                    <option value="">Select a department...</option>
+                    {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                </select>
+
+                <label style={styles.label}>Issue Title</label>
+                <input style={styles.input} placeholder="e.g., Cooler Temperature Too High" value={title} onChange={(e) => setTitle(e.target.value)} />
+
+                <label style={styles.label}>Description</label>
+                <textarea style={{...styles.input, ...styles.textArea}} placeholder="Provide details about the issue..." value={description} onChange={(e) => setDescription(e.target.value)} />
+
+                <label style={styles.label}>Assign To</label>
+                <select style={styles.input} value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+                    <option value="">Select a person...</option>
+                    {ASSIGNED_TO_EMAILS.map(email => <option key={email} value={email}>{email}</option>)}
+                </select>
+
+                <div style={{textAlign: 'center', margin: '20px 0'}}>
+                    {image && <img src={image} style={styles.imagePreview} alt="Issue preview"/>}
+                    <label htmlFor="file-upload" style={{...styles.button, backgroundColor: ACCENT_COLOR, cursor: 'pointer'}}>
+                        Choose Image
+                    </label>
+                    <input id="file-upload" type="file" accept="image/*" onChange={handleImageChange} style={{display: 'none'}}/>
+                </div>
+
+                <AppButton title="Submit Issue" onClick={handleSubmit} isLoading={isLoading} disabled={!!success} style={{backgroundColor: PRIMARY_COLOR}} />
+              </div>
+            </div>
+          );
+        };
+
+        const DetailsScreen = ({ setScreen, issue, refreshIssues }) => {
+            const [resolutionNotes, setResolutionNotes] = useState('');
+            const [resolvedImage, setResolvedImage] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState('');
+
+            if (!issue) return null;
+
+            const handleImageChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onloadend = () => { setResolvedImage(reader.result); };
+                reader.readAsDataURL(file);
+            };
+
+            const handleResolve = async () => {
+                if (!resolutionNotes) {
+                    setError('Please provide resolution notes.');
+                    return;
+                }
+                setError('');
+                setSuccess('');
+                setIsLoading(true);
+
+                const powerAutomateUrl = "https://prod-98.westus.logic.azure.com:443/workflows/a078adcf01784fa9b5509efcd4a68f42/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=0xgJtMNQ5C_yc3gendxcltVb0FwHHufqSf2R4JxlV4M";
+
+                const payload = {
+                    data: {
+                        id: issue.ID,
+                        resolutionNotes: resolutionNotes,
+                        resolvedImage: resolvedImage,
+                    }
+                };
+
+                try {
+                    const response = await fetch(powerAutomateUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (response.ok) {
+                        setSuccess('Issue resolved successfully!');
+                        await refreshIssues();
+                        setScreen('home');
+                    } else {
+                        setIsLoading(false); // Stop loading on error
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
+                } catch (err) {
+                    console.error("Resolution Error:", err);
+                    setError('Failed to resolve issue. Please check network and try again.');
+                    setIsLoading(false); // Stop loading on error
+                }
+            };
+
+            return (
+                <div style={styles.container}>
+                    <header style={styles.header}>
+                        <button style={styles.backButton} onClick={() => setScreen('home')}>&lt; Back</button>
+                        <h1 style={styles.headerTitle}>Issue Details</h1>
+                    </header>
+                    <div style={styles.card}>
+                        <div style={styles.detailRow}>
+                            <h2 style={styles.detailTitle}>{issue.Title}</h2>
+                            <StatusPill status={issue.Status} />
+                        </div>
+                        <p style={styles.detailLabel}>Department:</p>
+                        <p style={styles.detailText}>{issue.Department}</p>
+                        <p style={styles.detailLabel}>Description:</p>
+                        <p style={styles.detailText}>{issue.Description || 'No description provided.'}</p>
+                        <p style={styles.detailLabel}>Assigned To:</p>
+                        <p style={styles.detailText}>{issue.AssignedTo}</p>
+                        <p style={styles.detailLabel}>Reported Date:</p>
+                        <p style={styles.detailText}>{issue.Created?.split('T')[0]}</p>
+                        <p style={styles.detailLabel}>Issue Photo:</p>
+                        <p style={styles.detailText}>Photo is stored in SharePoint.</p>
+                    </div>
+
+                    {issue.Status === 'Resolved' ? (
+                         <div style={styles.card}>
+                            <h3 style={styles.sectionTitle}>Resolution Details</h3>
+                            <p style={styles.detailLabel}>Resolution Notes:</p>
+                            <p style={styles.detailText}>{issue.ResolutionNotes}</p>
+                            <p style={styles.detailLabel}>Resolution Photo:</p>
+                            <p style={styles.detailText}>Photo is stored in SharePoint.</p>
+                        </div>
+                    ) : (
+                        <div style={styles.card}>
+                            <h3 style={styles.sectionTitle}>Resolve Issue</h3>
+                             {error && <p style={styles.errorText}>{error}</p>}
+                             {success && <p style={styles.successText}>{success}</p>}
+
+                            <label style={styles.label}>Resolution Notes</label>
+                            <textarea style={{...styles.input, ...styles.textArea}} placeholder="Describe how the issue was resolved..." value={resolutionNotes} onChange={(e) => setResolutionNotes(e.target.value)} />
+                            
+                            <div style={{textAlign: 'center', margin: '20px 0'}}>
+                                {resolvedImage && <img src={resolvedImage} style={styles.imagePreview} alt="Resolution preview"/>}
+                                <label htmlFor="resolve-file-upload" style={{...styles.button, backgroundColor: ACCENT_COLOR, cursor: 'pointer'}}>
+                                   Upload Resolution Photo
+                                </label>
+                                <input id="resolve-file-upload" type="file" accept="image/*" onChange={handleImageChange} style={{display: 'none'}}/>
+                            </div>
+
+                            <AppButton title="Mark as Resolved" onClick={handleResolve} isLoading={isLoading} disabled={!!success} style={{backgroundColor: SUCCESS_COLOR}} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+          const [screen, setScreen] = useState('home');
+          const [issues, setIssues] = useState([]);
+          const [selectedIssue, setSelectedIssue] = useState(null);
+          const [isLoading, setIsLoading] = useState(true);
+          const [error, setError] = useState('');
+
+          const getIssuesUrl = "https://prod-100.westus.logic.azure.com:443/workflows/b23e24c5f44d4a8e948375fda65bd145/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bwPnNOPEnEIdGWVajTvdfNj_jcbF7jR6gFcMvyaO7R0";
+
+          const fetchIssues = async () => {
+            setIsLoading(true);
+            setError('');
+            try {
+                const response = await fetch(getIssuesUrl, { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                setIssues(data);
+            } catch (e) {
+                console.error("Failed to fetch issues:", e);
+                setError("Could not load issues from SharePoint.");
+            } finally {
+                setIsLoading(false);
+            }
+          };
+          
+          useEffect(() => {
+            fetchIssues();
+          }, []);
+
+          const renderScreen = () => {
+            if (error) {
+                return <div style={{...styles.container, textAlign: 'center'}}><p style={styles.errorText}>{error}</p><AppButton title="Try Again" onClick={fetchIssues} /></div>
+            }
+            
+            switch (screen) {
+              case 'new':
+                return <NewIssueScreen setScreen={setScreen} refreshIssues={fetchIssues} />;
+              case 'details':
+                return <DetailsScreen setScreen={setScreen} issue={selectedIssue} refreshIssues={fetchIssues} />;
+              default:
+                return <HomeScreen setScreen={setScreen} setSelectedIssue={setSelectedIssue} issues={issues} isLoading={isLoading} />;
+            }
+          };
+
+          return <div style={styles.root}>{renderScreen()}</div>;
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

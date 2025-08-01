@@ -45,9 +45,7 @@
         const SUCCESS_COLOR = '#198754';
 
         // --- App Data ---
-        const DEPARTMENTS = ['Powdergrinding', 'Pressing','BeanIntake', 'Roasting&Grinding', 'Blocking', 'Lab', 'ControlRoom', 'TankFarm1', 'TankFarm2', 'Melting', 'TD', 'Outside'];
-        const ASSIGNED_TO_EMAILS = ['remco.mulder@dutchcocoa.nl', 'r.koers@ecomindustrial.eu'];
-        // --- NEW: Test Users for Mock Login ---
+        const ASSIGNED_TO_EMAILS = ['remco.mulder@dutchcocoa.nl', 'roy.koers@ecomindustrial.eu'];
         const TEST_USERS = [
             { name: 'Operator A', email: 'operator.a@test.com' },
             { name: 'Supervisor B', email: 'supervisor.b@test.com' },
@@ -152,9 +150,9 @@
                 <div key={issue.ID} onClick={() => { setSelectedIssue(issue); setScreen('details'); }} style={{...styles.card, ...styles.issueCard}}>
                   <div style={styles.issueCardHeader}>
                     <h2 style={styles.issueTitle}>{issue.Title}</h2>
-                    <StatusPill status={issue.Status} />
+                    <StatusPill status={issue.Status?.Value} />
                   </div>
-                  <p style={styles.issueDetailsText}>Department: {issue.Department}</p>
+                  <p style={styles.issueDetailsText}>Department: {issue.Departement?.Value}</p>
                   <p style={styles.issueDetailsText}>Reported By: {issue.ReportedBy}</p>
                 </div>
               ))}
@@ -163,7 +161,7 @@
           );
         };
 
-        const NewIssueScreen = ({ setScreen, refreshIssues, currentUser }) => {
+        const NewIssueScreen = ({ setScreen, refreshIssues, currentUser, departments }) => {
           const [department, setDepartment] = useState('');
           const [title, setTitle] = useState('');
           const [description, setDescription] = useState('');
@@ -200,7 +198,7 @@
                 description: description,
                 assignedTo: assignedTo,
                 initialImage: image,
-                reportedBy: currentUser.email // Automatically add the logged-in user
+                reportedBy: currentUser.email
               }
             };
 
@@ -239,7 +237,7 @@
                 <label style={styles.label}>Department</label>
                 <select style={styles.input} value={department} onChange={(e) => setDepartment(e.target.value)}>
                     <option value="">Select a department...</option>
-                    {DEPARTMENTS.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                    {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                 </select>
 
                 <label style={styles.label}>Issue Title</label>
@@ -301,7 +299,7 @@
                         id: issue.ID,
                         resolutionNotes: resolutionNotes,
                         resolvedImage: resolvedImage,
-                        resolvedBy: currentUser.email // Automatically add the logged-in user
+                        resolvedBy: currentUser.email
                     }
                 };
 
@@ -336,10 +334,10 @@
                     <div style={styles.card}>
                         <div style={styles.detailRow}>
                             <h2 style={styles.detailTitle}>{issue.Title}</h2>
-                            <StatusPill status={issue.Status} />
+                            <StatusPill status={issue.Status?.Value} />
                         </div>
                         <p style={styles.detailLabel}>Department:</p>
-                        <p style={styles.detailText}>{issue.Department}</p>
+                        <p style={styles.detailText}>{issue.Departement?.Value}</p>
                         <p style={styles.detailLabel}>Description:</p>
                         <p style={styles.detailText}>{issue.Description || 'No description provided.'}</p>
                         <p style={styles.detailLabel}>Reported By:</p>
@@ -352,7 +350,7 @@
                         <p style={styles.detailText}>Photo is stored in SharePoint.</p>
                     </div>
 
-                    {issue.Status === 'Resolved' ? (
+                    {issue.Status?.Value === 'Resolved' ? (
                          <div style={styles.card}>
                             <h3 style={styles.sectionTitle}>Resolution Details</h3>
                             <p style={styles.detailLabel}>Resolution Notes:</p>
@@ -392,10 +390,12 @@
           const [screen, setScreen] = useState('home');
           const [issues, setIssues] = useState([]);
           const [selectedIssue, setSelectedIssue] = useState(null);
-          const [isLoading, setIsLoading] = useState(false);
+          const [isLoading, setIsLoading] = useState(true);
           const [error, setError] = useState('');
+          const [departments, setDepartments] = useState([]);
 
           const getIssuesUrl = "https://prod-100.westus.logic.azure.com:443/workflows/b23e24c5f44d4a8e948375fda65bd145/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bwPnNOPEnEIdGWVajTvdfNj_jcbF7jR6gFcMvyaO7R0";
+          const getDepartmentsUrl = "https://prod-06.westus.logic.azure.com:443/workflows/5cfa7612d3944337a44a3cf7b762a2b4/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8PxIwbtp1vQlsr26nB3neS-Lyx1Cbtls_6DI04Q5LrI";
 
           const fetchIssues = async () => {
             setIsLoading(true);
@@ -412,10 +412,24 @@
                 setIsLoading(false);
             }
           };
+
+          const fetchDepartments = async () => {
+              try {
+                  const response = await fetch(getDepartmentsUrl, { method: 'POST' });
+                  if(!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                  const data = await response.json();
+                  // The data is an array of strings, so we can use it directly
+                  setDepartments(data);
+              } catch (e) {
+                  console.error("Failed to fetch departments:", e);
+                  // Don't show a blocking error, just log it. The dropdown will be empty.
+              }
+          };
           
           useEffect(() => {
-            if (currentUser) { // Only fetch issues if a user is logged in
+            if (currentUser) {
                 fetchIssues();
+                fetchDepartments();
             }
           }, [currentUser]);
 
@@ -430,7 +444,7 @@
             
             switch (screen) {
               case 'new':
-                return <NewIssueScreen setScreen={setScreen} refreshIssues={fetchIssues} currentUser={currentUser} />;
+                return <NewIssueScreen setScreen={setScreen} refreshIssues={fetchIssues} currentUser={currentUser} departments={departments} />;
               case 'details':
                 return <DetailsScreen setScreen={setScreen} issue={selectedIssue} refreshIssues={fetchIssues} currentUser={currentUser} />;
               default:

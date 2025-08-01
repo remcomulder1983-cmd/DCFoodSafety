@@ -71,6 +71,7 @@
           input: { width: '100%', backgroundColor: '#fff', border: '1px solid #ced4da', borderRadius: '8px', padding: '12px', fontSize: '16px', marginBottom: '15px', boxSizing: 'border-box', color: TEXT_COLOR },
           textArea: { height: '120px', resize: 'vertical' },
           button: { width: '100%', padding: '15px', borderRadius: '8px', marginTop: '10px', color: 'white', fontSize: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+          logoutButton: { marginLeft: '15px', padding: '5px 10px', fontSize: '12px', backgroundColor: SUBTLE_TEXT_COLOR, color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' },
           imagePreview: { width: '100%', height: 'auto', maxHeight: '300px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px', backgroundColor: '#e9ecef', display: 'block' },
           detailImage: { width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px', backgroundColor: '#e9ecef' },
           detailRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' },
@@ -133,7 +134,7 @@
             );
         };
 
-        const HomeScreen = ({ setScreen, setSelectedIssue, issues, isLoading, currentUser }) => {
+        const HomeScreen = ({ setScreen, setSelectedIssue, issues, isLoading, currentUser, handleLogout }) => {
           if (isLoading) {
               return <div style={{...styles.container, textAlign: 'center'}}><p>Loading Issues...</p></div>
           }
@@ -143,7 +144,10 @@
               <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
               <header style={styles.header}>
                 <h1 style={styles.headerTitle}>Food Safety Issues</h1>
-                <p style={{ color: SUBTLE_TEXT_COLOR }}>Logged in as: {currentUser.name}</p>
+                <p style={{ color: SUBTLE_TEXT_COLOR }}>
+                    Logged in as: {currentUser.name}
+                    <button onClick={handleLogout} style={styles.logoutButton}>Logout</button>
+                </p>
               </header>
               {issues.length === 0 && <p style={{textAlign: 'center'}}>No open issues found.</p>}
               {issues.map(issue => (
@@ -426,6 +430,10 @@
               }
           };
           
+          const handleLogout = () => {
+              setCurrentUser(null);
+          };
+
           useEffect(() => {
             if (currentUser) {
                 fetchIssues();
@@ -448,7 +456,7 @@
               case 'details':
                 return <DetailsScreen setScreen={setScreen} issue={selectedIssue} refreshIssues={fetchIssues} currentUser={currentUser} />;
               default:
-                return <HomeScreen setScreen={setScreen} setSelectedIssue={setSelectedIssue} issues={issues} isLoading={isLoading} currentUser={currentUser} />;
+                return <HomeScreen setScreen={setScreen} setSelectedIssue={setSelectedIssue} issues={issues} isLoading={isLoading} currentUser={currentUser} handleLogout={handleLogout} />;
             }
           };
 
